@@ -1,0 +1,6 @@
+0 Mute
+1 Palms Open
+2 Heart
+3 Palms Closed
+4 Peace
+5 Point
