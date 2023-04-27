@@ -1,3 +1,4 @@
+# Imports to deal with all the detection and datacollection
 import os
 import cv2
 import mediapipe as mp
@@ -7,10 +8,13 @@ import math
 import uuid
 from ClassificationModule import Classifier
 
-# New imports for volume
+# Imports for volume
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
+# Imports for web control
+import webbrowser
 
 # Global Values
 offset = 25
@@ -44,6 +48,11 @@ devices = AudioUtilities.GetSpeakers()
 interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
 volume = cast(interface, POINTER(IAudioEndpointVolume))
 
+# Web Setup
+url = 'https://www.google.com'
+chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
+
 ''' selectMode
     Args: 
         key: the key being pressed.
@@ -63,7 +72,7 @@ def selectMode(key, snapshot, ls, watch):
     # ==========================================================
 
     # Go into/out snapshot mode
-    if key == ord('s'):
+    if ((key == ord('s')) or (key == ord('S'))):
         if snapshot == False:
             print('Snapshot mode: Activated')
         else:
@@ -71,7 +80,7 @@ def selectMode(key, snapshot, ls, watch):
         return folder, not snapshot, ls, watch
 
     # Go into/out ls mode
-    elif key == ord('l'):
+    elif ((key == ord('l')) or (key == ord('L'))):
         if ls == False:
             print('Listing Mode: Activated')
         else:
@@ -79,7 +88,7 @@ def selectMode(key, snapshot, ls, watch):
         return folder, snapshot, not ls, watch
 
     # Go into watch mode
-    elif key == ord('w'):
+    elif ((key == ord('w')) or (key == ord('W'))):
         if watch == False:
             print('Watch Mode: Activated')
         else:
@@ -112,12 +121,21 @@ def selectMode(key, snapshot, ls, watch):
 
     return folder, snapshot, ls, watch
 
+''' audioControl
+    Args:
+        name: The gestureName[index] being passed in to compare to the gestureName dictionary
+    Returns:
+        Nothing
+'''
 def audioControl(name):
-    if name == 'Mute':
+    # Mute: 
+    if name == gestureName[0]:
         volume.SetMute(1, None)
-    elif name == 'Palms Open':
+    # Unmute:
+    elif name == gestureName[1]:
         volume.SetMute(0, None)
-    elif name == 'Heart':
+    # Volume Up
+    elif name == gestureName[2]:
         currentVolume = volume.GetMasterVolumeLevelScalar()
         # Rounding to nearest 10
         roundedVolume = round(currentVolume, 1)
@@ -126,7 +144,8 @@ def audioControl(name):
             volume.SetMasterVolumeLevelScalar(roundedVolume + .10, None)
         except:
             print('Volume is already at max')
-    elif name == 'Point':
+    # Volume Down
+    elif name == gestureName[3]:
         currentVolume = volume.GetMasterVolumeLevelScalar()
         roundedVolume = round(currentVolume, 1)
         print('RoundedVolume in decrease volume = ' + str(roundedVolume))
@@ -135,13 +154,33 @@ def audioControl(name):
             volume.SetMasterVolumeLevelScalar(roundedVolume + -.10, None)
         except:
             print('Volume is already at min')
+
+'''webControl
+    Args:
+        name: The gestureName[index] being passed in to compare to the gestureName dictionary
+    Returns:
+        Nothing
+'''
+def webControl(name):
+    if name == gestureName[4]:
+        webbrowser.get('chrome').open(url)
+    elif name == gestureName[5]:
+        webbrowser.get('chrome').open('https://www.youtube.com')
+
 ''' watchMode
+    Args:
+        image: The current frame being passed in
+        detector: Google's Mediapipe hand detector
+        classifier: CVZone's Class to help with tensorflow prediction with the given hand gesture
+    Returns:
+        Nothing
 '''
 def watchMode (image, detector, classifier):
     
     global waitPredict 
     landmarkList, window = detector.findSnapshotWindow(image, draw=True)
 
+    # If a hand is detected within the frame
     if len(landmarkList) != 0:
         try:
             croppedImage =  image[window[1]-offset:window[1]+window[3]+offset,
@@ -151,16 +190,27 @@ def watchMode (image, detector, classifier):
 
             waitPredict += 1
 
-            if waitPredict == 20:
+            if waitPredict == 25:
                 prediction, index = classifier.getPrediction(croppedImage, draw=False)
                 print(gestureName[index])
-                audioControl(gestureName[index])
-                waitPredict = 0
+                # First 4 control the audio
+                if index >= 0 and index <= 3:
+                   audioControl(gestureName[index])
+                # Remaining controls the web
+                elif index >= 4 and index <= 5:
+                   webControl(gestureName[index]) 
+                waitPredict = 0      
         except cv2.error as error:
             # x/y is at below 0. out of bounds
             print("[Error]: {}".format(error)) 
 
 ''' snapshotMode
+    Args:
+        image: The current frame being passed in
+        detector: Google's Mediapipe hand detector
+        folder: The folder name being passed in to save the data to
+    Returns:
+        Nothing
 '''
 def snapshotMode (image, detector, folder):
     landmarkList, window = detector.findSnapshotWindow(image, draw=True)
@@ -211,17 +261,20 @@ def snapshotMode (image, detector, folder):
                 # heightGap -> slicedImageTotal
                 # Place the image within that slice
                     whiteImage[:, heightGap: newHeight + heightGap] = resizedImage
-            cv2.imshow("SnapshotView", whiteImage)
+            cv2.imshow('SnapshotView', whiteImage)
         except cv2.error as error:
             # x/y is at below 0. out of bounds
-            print("[Error]: {}".format(error))
+            print('[Error]: {}'.format(error))
 
     if any(folder == dataCollection for dataCollection in dataCollectionList):
         picture = cv2.imwrite(f'{folder}/{str(uuid.uuid4())}.jpg', whiteImage)
 
+''' main
+    The main program where most of the OpenCV is done.
+'''
 def main():
         
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+    # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
     # Set the default
     cameraWidth = 640  
@@ -232,7 +285,7 @@ def main():
     capture.set(4, cameraHeight)
 
     detector = HandsDetector.handsDetector()
-    classifier = Classifier("TrainedModel/keras_model.h5", "TrainedModel/labels.txt")
+    classifier = Classifier('TrainedModel/keras_model.h5', 'TrainedModel/labels.txt')
     snapshot = False
     ls = False
     watch = False
@@ -245,14 +298,15 @@ def main():
         key = cv2.waitKey(1)
         folder, snapshot, ls, watch = selectMode(key, snapshot, ls, watch)
  
-        # Break out of the loop using "ESC"
+        # Break out of the loop using 'ESC'
         if key == 27:
             break
         # Closes out the window once done with snapshot mode
-        elif key == ord('s') and snapshot == False:
-            cv2.destroyWindow("SnapshotView")
-        elif key == ord('w') and watch == False:
-            cv2.destroyWindow("HandCam")
+        elif ((key == ord('s')) or (key == ord('S')))  and snapshot == False:
+            if cv2.getWindowProperty('SnapshotView', cv2.WND_PROP_VISIBLE) >= 1:
+                cv2.destroyWindow('SnapshotView')
+        elif ((key == ord('w')) or (key == ord('W'))) and watch == False:
+            cv2.destroyWindow('HandCam')
 
         # Reads the camera
         success, image = capture.read()
@@ -271,12 +325,12 @@ def main():
         if snapshot:
             snapshotMode(image, detector, folder)
 
-        cv2.imshow("Gesture Control", image)
+        cv2.imshow('Gesture Control', image)
 
     # Cleanly closes
     capture.release()
     cv2.destroyAllWindows()
-    print("Cleanly closed the program")
+    print('Cleanly closed the program')
 
 if __name__ == "__main__":
     main()
