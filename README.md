@@ -37,7 +37,7 @@ Data Training:
 
 1.  Run the program using the command below:
 
-`python main.py` 
+    `python main.py` 
 
 2.  Place your hand in front of the camera and perform one of the following gestures:
 
