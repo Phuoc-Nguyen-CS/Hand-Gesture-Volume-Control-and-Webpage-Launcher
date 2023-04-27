@@ -41,12 +41,12 @@ Data Training:
 
 2.  Place your hand in front of the camera and perform one of the following gestures:
 
--   "Mute": Touch the tip of your thumb and pointer finger together and bring all your other fingers to match your pointer finger's level.
--   "Unmute": Hold your hand open with your palm facing forward.
--   "Raise volume": Point up.
--   "Lower volume": Point down.
--   "Launch Google": Make a C with your left hand.
--  "Launch Youtube:" Make a C with your right hand.
+    -   "Mute": Touch the tip of your thumb and pointer finger together and bring all your other fingers to match your pointer finger's level.
+    -   "Unmute": Hold your hand open with your palm facing forward.
+    -   "Raise volume": Point up.
+    -   "Lower volume": Point down.
+    -   "Launch Google": Make a C with your left hand.
+    -  "Launch Youtube:" Make a C with your right hand.
 
 3.  The program will perform the action based on the detected gesture.
 
@@ -56,5 +56,5 @@ Data Training:
 -   [TensorFlow](https://www.tensorflow.org/)
 -   [MediaPipe](https://google.github.io/mediapipe/)
 -   [Comtypes](https://pythonhosted.org/comtypes/)
-- [Pycaw](https://pypi.org/project/pycaw/)
-- [Webbrowser](https://docs.python.org/3/library/webbrowser.html)
+-   [Pycaw](https://pypi.org/project/pycaw/)
+-   [Webbrowser](https://docs.python.org/3/library/webbrowser.html)
