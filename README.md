@@ -7,11 +7,11 @@ This program uses OpenCV, TensorFlow, and Google's MediaPipe to detect hand gest
 
 1.  Clone the repository using the command below:
 
-`git clone https://github.com/your-username/hand-gesture-volume-control.git` 
+    `git clone https://github.com/your-username/hand-gesture-volume-control.git` 
 
 2.  Install the required libraries using the command below:
 
-`pip install -r requirements.txt` 
+    `pip install -r requirements.txt` 
 
 ## Note
 
