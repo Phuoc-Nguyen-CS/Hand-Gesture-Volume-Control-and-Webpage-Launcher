@@ -5,8 +5,12 @@ import HandsDetector
 import numpy as np
 import math
 import uuid
-# from cvzone.ClassificationModule import Classifier
 from ClassificationModule import Classifier
+
+# New imports for volume
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 # Global Values
 offset = 25
@@ -34,6 +38,11 @@ dataCollectionList = [
     'DataCollection/8', 
     'DataCollection/9'
 ]
+
+# Audio Setup
+devices = AudioUtilities.GetSpeakers()
+interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interface, POINTER(IAudioEndpointVolume))
 
 ''' selectMode
     Args: 
@@ -103,6 +112,29 @@ def selectMode(key, snapshot, ls, watch):
 
     return folder, snapshot, ls, watch
 
+def audioControl(name):
+    if name == 'Mute':
+        volume.SetMute(1, None)
+    elif name == 'Palms Open':
+        volume.SetMute(0, None)
+    elif name == 'Heart':
+        currentVolume = volume.GetMasterVolumeLevelScalar()
+        # Rounding to nearest 10
+        roundedVolume = round(currentVolume, 1)
+        print('RoundedVolume in raise volume = ' + str(roundedVolume))
+        try:
+            volume.SetMasterVolumeLevelScalar(roundedVolume + .10, None)
+        except:
+            print('Volume is already at max')
+    elif name == 'Point':
+        currentVolume = volume.GetMasterVolumeLevelScalar()
+        roundedVolume = round(currentVolume, 1)
+        print('RoundedVolume in decrease volume = ' + str(roundedVolume))
+        # Rounding to nearest 10
+        try:
+            volume.SetMasterVolumeLevelScalar(roundedVolume + -.10, None)
+        except:
+            print('Volume is already at min')
 ''' watchMode
 '''
 def watchMode (image, detector, classifier):
@@ -122,6 +154,7 @@ def watchMode (image, detector, classifier):
             if waitPredict == 20:
                 prediction, index = classifier.getPrediction(croppedImage, draw=False)
                 print(gestureName[index])
+                audioControl(gestureName[index])
                 waitPredict = 0
         except cv2.error as error:
             # x/y is at below 0. out of bounds
