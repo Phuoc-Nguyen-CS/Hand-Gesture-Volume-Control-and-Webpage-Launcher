@@ -30,6 +30,25 @@ gestureName = {
     5 : 'Point'
 }
 
+outputName = {
+    0 : 'Mute',
+    1 : 'Unmute',
+    2 : 'Turn Up Volume',
+    3 : 'Turn Down Volume',
+    4 : 'Open New Tab',
+    5 : 'Open Youtube'
+}
+
+# Index to display name and output name
+output = 0
+
+# Amount of images
+amount = 0
+
+# Bool to determine if we should display anything on main screen
+watching = False
+lwatching = False
+
 dataCollectionList = [
     'DataCollection/0',
     'DataCollection/1',
@@ -66,6 +85,7 @@ webbrowser.register('chrome', None, webbrowser.BackgroundBrowser(chrome_path))
         ls : a boolean that would be reversed to turn on and off listing mode.
 '''
 def selectMode(key, snapshot, ls, watch):
+    global watching, amount, lwatching
     # Give an out of bound number indicating no number in bound was pressed
     number = -1
     folder = ''
@@ -83,16 +103,20 @@ def selectMode(key, snapshot, ls, watch):
     elif ((key == ord('l')) or (key == ord('L'))):
         if ls == False:
             print('Listing Mode: Activated')
+            lwatching = True
         else:
             print('Listing Mode: Deactivated')
+            lwatching = False
         return folder, snapshot, not ls, watch
 
     # Go into watch mode
     elif ((key == ord('w')) or (key == ord('W'))):
         if watch == False:
             print('Watch Mode: Activated')
+            watching = True
         else:
             print('Watch Mode: Deactivated')
+            watching = False
         return folder, snapshot, ls, not watch
     
     # ==========================================================
@@ -100,16 +124,21 @@ def selectMode(key, snapshot, ls, watch):
     # Prints the number of snapshots within the given folder
     if (ls == True) and (ord('0') <= key <= ord('9')):
         number = key - ord('0')
-        dirPath = folder + str(number)
+        # folder = os.getcwd
+        # dirPath = folder + str(number)
+        folder = 'DataCollection/'
+        folder += str(number)  
+        # print(dirPath)
         numFiles = 0
 
         # Go through the  directory
-        for images in os.listdir(dirPath):
+        for images in os.listdir(folder):
             # Checking if file
-            if os.path.isfile(os.path.join(dirPath, images)):
+            if os.path.isfile(os.path.join(folder, images)):
                 numFiles += 1
         
         print(numFiles)
+        amount = numFiles
         return folder, snapshot, ls, watch
 
     # Returns the folder where to store the snapshot
@@ -139,7 +168,7 @@ def audioControl(name):
         currentVolume = volume.GetMasterVolumeLevelScalar()
         # Rounding to nearest 10
         roundedVolume = round(currentVolume, 1)
-        print('RoundedVolume in raise volume = ' + str(roundedVolume))
+        print('Rounded Volume in raise volume = ' + str(roundedVolume))
         try:
             volume.SetMasterVolumeLevelScalar(roundedVolume + .10, None)
         except:
@@ -177,8 +206,8 @@ def webControl(name):
 '''
 def watchMode (image, detector, classifier):
     
-    global waitPredict 
-    landmarkList, window = detector.findSnapshotWindow(image, draw=True)
+    global waitPredict, output
+    landmarkList, window = detector.findSnapshotWindow(image, draw=False)
 
     # If a hand is detected within the frame
     if len(landmarkList) != 0:
@@ -193,6 +222,7 @@ def watchMode (image, detector, classifier):
             if waitPredict == 25:
                 prediction, index = classifier.getPrediction(croppedImage, draw=False)
                 print(gestureName[index])
+                output = index
                 # First 4 control the audio
                 if index >= 0 and index <= 3:
                    audioControl(gestureName[index])
@@ -214,7 +244,6 @@ def watchMode (image, detector, classifier):
 '''
 def snapshotMode (image, detector, folder):
     landmarkList, window = detector.findSnapshotWindow(image, draw=True)
-
     if len(landmarkList) != 0:
         try:
             # Convert to 8 bit image using np.ones
@@ -273,7 +302,7 @@ def snapshotMode (image, detector, folder):
     The main program where most of the OpenCV is done.
 '''
 def main():
-        
+    # global gestureName, output, outputName, amount, lwatching
     # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
     # Set the default
@@ -289,7 +318,6 @@ def main():
     snapshot = False
     ls = False
     watch = False
-
     # === Program Starts Here =====================================
 
     while True:
@@ -313,13 +341,21 @@ def main():
         # Mirrors the image so I don't lose my mind
         image = cv2.flip(image, 1)
         image = detector.findHands(image, draw=False)
-
+        
         # Find the snapshot values and the list of landmarks for the hands
         landmarkList, window = detector.findSnapshotWindow(image, draw=True)
+        if watching:
+            # Displays Predicted
+            cv2.putText(image, "Gesture Given: " + gestureName[output], (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            # Displays command done
+            cv2.putText(image, "Executed Command: " + outputName[output], (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        if lwatching:
+            # amount = "Images Total: " + str(amount)
+            cv2.putText(image, "Images Total: " + str(amount), (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         
         # === Watch Mode ==========================================================
         if watch:
-            watchMode(image, detector, classifier)
+           watchMode(image, detector, classifier)
         
         # === Snapshot Mode =======================================================
         if snapshot:
