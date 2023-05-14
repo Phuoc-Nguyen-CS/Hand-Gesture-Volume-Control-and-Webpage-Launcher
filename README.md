@@ -5,6 +5,7 @@ This program uses OpenCV, TensorFlow, and Google's MediaPipe to detect hand gest
 
 ## Installation
 
+### Github
 1.  Clone the repository using the command below:
 
     `git clone https://github.com/Phuoc-Nguyen-CS/Hand-Gesture-Volume-Control-and-Webpage-Launcher.git` 
@@ -12,6 +13,11 @@ This program uses OpenCV, TensorFlow, and Google's MediaPipe to detect hand gest
 2.  Install the required libraries using the command below:
 
     `pip install -r requirements.txt` 
+
+### Exe File
+1. Go to: "https://drive.google.com/drive/folders/15Ymnuz33PyBSVSkDqS5YzpqU2l09IxnR?usp=sharing"
+2. Download the file!
+3. Run main.exe
 
 ## Note
 
@@ -45,8 +51,8 @@ Data Training:
     -   "Unmute": Hold your hand open with your palm facing forward.
     -   "Raise volume": Point up.
     -   "Lower volume": Point down.
-    -   "Launch Google": Make a C shape with your left hand.
-    -   "Launch Youtube:" Make a C shape with your right hand.
+    -   "Launch Google": Make a Peace Sign (tentative to change)
+    -   "Launch Youtube:" Point at the Screen (tentative to change)
 
 3.  The program will perform the action based on the detected gesture.
 
